@@ -1,6 +1,6 @@
 from collections import deque
 from enum import Enum
-from typing import List
+from typing import List, Set
 
 class NodeType(Enum):
     AND = 1
@@ -19,6 +19,9 @@ class Node:
         return f'{self.courseTitle} {self.value}'
     
     def add_child(self, child: 'Node') -> None:
+        if child.nodeType == NodeType.AND:
+            self.children.insert(0, child)
+            return
         self.children.append(child)
 
     def get_children(self) -> List['Node']:
@@ -54,28 +57,41 @@ class Node:
         
         return best_path if best_path else []
 
-    def min_prereqs(self) -> List['Node']:
+    def min_prereqs(self, definites: List['Node'] = None) -> List['Node']:
+        if definites is None:
+            definites = []
+            for child in self.children:
+                if child.nodeType == NodeType.AND:
+                    definites.append(child)
+            # print(f'QQQQQQ self: {self.courseTitle} definites: {[str(node) for node in definites]}')
+
         if self.value:
             return []
-
-        original_value = self.value
-        self.set_value(True)
+        
+       
 
         if self.nodeType == NodeType.AND:
-            courses = [self]  # Include this course
+            courses = [self]
         else:
             courses = []
 
         prereq_courses = []
         for child in self.children:
-            child_prereqs = child.min_prereqs()
+            temp_definites = definites.copy()
+            if child.nodeType == NodeType.AND:
+                for child_of_child in child.get_children():
+                    if child_of_child.nodeType == NodeType.AND:
+                        temp_definites.append(child_of_child)
+                        # print(f'###### definites in self: {self.courseTitle} definites: {[str(node) for node in temp_definites]}')
+            child_prereqs = child.min_prereqs(temp_definites)
             if self.nodeType == NodeType.OR:
-                if not prereq_courses or len(child_prereqs) < len(prereq_courses):
+                # print(f'self: {self.courseTitle} definites: {[str(node) for node in definites]}')
+                # print(f'child: {child}, child_prereqs: {[str(node) for node in child_prereqs]} {not_in_list(child_prereqs, temp_definites)} {not_in_list(prereq_courses, temp_definites)}')
+                if not prereq_courses or count_items_not_in_list(child_prereqs, temp_definites) < count_items_not_in_list(prereq_courses, temp_definites):
                     prereq_courses = child_prereqs
             else:
                 prereq_courses.extend(child_prereqs)
 
-        self.set_value(original_value)
 
         return courses + prereq_courses
 
@@ -85,6 +101,19 @@ def print_node(node: Node, level: int) -> None:
     for child in node.get_children():
         print_node(child, level + 1)
 
+
+# Counts the items in lst1 that are not in lst2
+def count_items_not_in_list(lst1: List[any], lst2: List[any]) -> int:
+    counter = 0
+    for i in lst1:
+        if i not in lst2:
+            counter += 1
+    return counter
+
+
+
+
+# Tests
 root = Node(NodeType.AND, 'root', 'root')
 courseNode1 = Node(NodeType.AND, 'course1', 'course1')
 courseNode2 = Node(NodeType.AND, 'course2', 'course2')
@@ -99,10 +128,11 @@ OrNode.add_child(courseNode2)
 root.add_child(OrNode)
 courseNode2.add_child(courseNode5)
 courseNode1.add_child(OrNode1)
-OrNode1.add_child(courseNode3)
 OrNode1.add_child(courseNode5)
+OrNode1.add_child(courseNode3)
 OrNode.add_child(courseNode4)
 root.add_child(courseNode5)
+courseNode4.add_child(courseNode6)
 
 
 # path = root.bfs(courseNode3)
@@ -110,6 +140,9 @@ root.add_child(courseNode5)
 
 min_prereqs = root.min_prereqs()
 print(f'Minimum prerequisites needed: {[str(node) for node in min_prereqs]}')
+
+for node in min_prereqs:
+    node.set_value(True)
 
 print_node(root, 0)
 

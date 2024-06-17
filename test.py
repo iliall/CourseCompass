@@ -18,6 +18,11 @@ class Node:
     def __str__(self) -> str:
         return f'{self.courseTitle} {self.value}'
     
+
+    def __eq__(self, other: 'Node') -> bool:
+        return self.courseId == other.courseId
+
+    
     def add_child(self, child: 'Node') -> None:
         if child.nodeType == NodeType.AND:
             self.children.insert(0, child)
@@ -94,6 +99,47 @@ class Node:
 
 
         return courses + prereq_courses
+    
+def min_prereqs2(processed: List['Node'], toBeProcessed: List['Node']) -> List['Node']:
+    # print(f'processed: {[node.courseTitle for node in processed]}')
+    # print(f'toBeProcessed: {[node.courseTitle for node in toBeProcessed]}')
+    if not toBeProcessed:
+        return processed
+
+    current = toBeProcessed.pop(0)
+    processed.append(current)
+
+    if current.value:
+        return min_prereqs2(processed, toBeProcessed)
+
+    # AND node
+    if current.nodeType == NodeType.AND:
+        
+        for child in current.get_children():
+            if child.nodeType == NodeType.AND:
+                toBeProcessed.insert(0, child)
+            else:
+                toBeProcessed.append(child)
+        return min_prereqs2(processed, toBeProcessed)
+    
+    # OR node
+    else:
+        min_prereqs = []
+        for child in current.get_children():
+            temp_toBeProcessed = toBeProcessed.copy()
+            temp_processed = processed.copy()
+            if child.nodeType == NodeType.AND:
+                temp_toBeProcessed.insert(0, child)
+            else:
+                temp_toBeProcessed.append(child)
+            
+            temp_min_prereqs = min_prereqs2(temp_processed, temp_toBeProcessed)
+            if not min_prereqs or count_items_not_in_list(temp_min_prereqs, processed) < count_items_not_in_list(min_prereqs, processed):
+                min_prereqs = temp_min_prereqs
+        
+        return min_prereqs
+
+        
 
 # Helper function to print the tree structure
 def print_node(node: Node, level: int) -> None:
@@ -138,7 +184,8 @@ courseNode4.add_child(courseNode6)
 # path = root.bfs(courseNode3)
 # print([str(node) for node in path])
 
-min_prereqs = root.min_prereqs()
+# min_prereqs = root.min_prereqs()
+min_prereqs = min_prereqs2([], [root])
 print(f'Minimum prerequisites needed: {[str(node) for node in min_prereqs]}')
 
 for node in min_prereqs:
@@ -146,3 +193,14 @@ for node in min_prereqs:
 
 print_node(root, 0)
 
+# root True
+#   course5 True
+#   course1 True
+#     OR True
+#       course3 True
+#       course5 True
+#   OR True
+#     course4 True
+#       course6 True
+#     course2 False
+#       course5 True

@@ -134,7 +134,8 @@ def min_prereqs2(processed: List['Node'], toBeProcessed: List['Node']) -> List['
                 temp_toBeProcessed.append(child)
             
             temp_min_prereqs = min_prereqs2(temp_processed, temp_toBeProcessed)
-            if not min_prereqs or count_items_not_in_list(temp_min_prereqs, processed) < count_items_not_in_list(min_prereqs, processed):
+            # if not min_prereqs or count_items_not_in_list(temp_min_prereqs, processed) < count_items_not_in_list(min_prereqs, processed):
+            if not min_prereqs or count_no_duplicates(temp_min_prereqs) < count_no_duplicates(min_prereqs):
                 min_prereqs = temp_min_prereqs
         
         return min_prereqs
@@ -156,6 +157,13 @@ def count_items_not_in_list(lst1: List[any], lst2: List[any]) -> int:
             counter += 1
     return counter
 
+def count_no_duplicates(lst: List['Node']) -> int:
+    counter = 0
+    for i in lst:
+        if i not in lst[:counter]:
+            counter += 1
+    return counter
+
 
 
 
@@ -167,6 +175,7 @@ courseNode3 = Node(NodeType.AND, 'course3', 'course3')
 courseNode4 = Node(NodeType.AND, 'course4', 'course4')
 courseNode5 = Node(NodeType.AND, 'course5', 'course5')
 courseNode6 = Node(NodeType.AND, 'course6', 'course6')
+courseNode7 = Node(NodeType.AND, 'course7', 'course7')
 OrNode = Node(NodeType.OR)
 OrNode1 = Node(NodeType.OR)
 root.add_child(courseNode1)
@@ -177,7 +186,7 @@ courseNode1.add_child(OrNode1)
 OrNode1.add_child(courseNode5)
 OrNode1.add_child(courseNode3)
 OrNode.add_child(courseNode4)
-root.add_child(courseNode5)
+root.add_child(courseNode7)
 courseNode4.add_child(courseNode6)
 
 

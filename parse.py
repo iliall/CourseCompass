@@ -1,57 +1,140 @@
-import os
+
 import re
+from enum import Enum
 from test import Node, NodeType
-import requests
+from api import API
 
-API_KEY = os.environ.get('API_KEY')
+TERM = 1245
+SUBJECTS = API.subjects()
+CODES = [] # R A C D L B J E M
+for subject in SUBJECTS:
+    CODES += API.codes({'term': 1245, 'subject': subject})
 
-def requirementsDescription(request):
-    term = request.get('term')
-    subject = request.get('subject')
-    catalogNumber = request.get('catalog-number')
-    headers = {'x-api-key': API_KEY}
-    response = requests.get('https://openapi.data.uwaterloo.ca/v3/Courses/' + 
-                            str(term) + '/' + 
-                            str(subject) + '/' + 
-                            str(catalogNumber), headers=headers)
-    if response.status_code == 200:
-        return response.json()[0].get('requirementsDescription')
-    else:
-        return response.text
+class TokenType(Enum):
+    NONE = 0
+    SUBJECT = 1 # In SUBJECTS
+    CODE = 2 # In CODES
+    COMMA = 3 # S,S (Could be AND or OR)
+    SLASH = 4 # S/S (Equivalent to OR)
+    LPAR = 5 # (S
+    RPAR = 6 # S)
+    OR = 7 # S or S
+    AND = 8 # S and S
+    ONEOF = 9 # One of S (Equivalent to OR)
+    SEMICOLON = 10 # S;S (Equivalent to AND)
 
-
-def parse_prerequisites(prereq_string: str) -> Node:
-    # Remove the Antireq section
-    prereq_string = re.sub(r"Antireq:.*", "", prereq_string).strip()
+class Token:
+    def __init__(self, 
+                 token: str, 
+                 type: TokenType):
+        self.token = token
+        self.type = type
     
-    # Extract the prerequisites part
-    prereq_string = re.sub(r"^Prereq: ", "", prereq_string)
+class clean:
+    @staticmethod
+    def full_clean(prereq_string: str) -> str:
+        return clean.remove_prereq(clean.remove_coreq(clean.remove_antireq(prereq_string)))
     
-    # Create the root node with OR type (default for top-level prerequisites)
-    root = Node(NodeType.OR)
-    
-    # Split prerequisites by "or" at the top level
-    or_sections = [section.strip() for section in re.split(r"\s+or\s+", prereq_string)]
-    
-    for section in or_sections:
-        if 'and' in section:
-            and_node = Node(NodeType.AND)
-            # Split by "and" and add children nodes
-            for sub_section in section.split('and'):
-                and_node.children.append(Node(NodeType.OR, courseId=sub_section.strip()))
-            root.children.append(and_node)
-        else:
-            root.children.append(Node(NodeType.OR, courseId=section))
-    
-    return root
+    def remove_antireq(prereq_string: str) -> str:
+        return re.sub(r"Antireq:.*", "", prereq_string).strip()
 
-# Example usage
-prereq_string = requirementsDescription({'term': 1245, 'subject': 'CS', 'catalog-number': 241})
-parsed_tree = parse_prerequisites(prereq_string)
+    def remove_coreq(prereq_string: str) -> str:
+        return re.sub(r"Coreq:.*", "", prereq_string).strip()
+    
+    def remove_prereq(prereq_string: str) -> str:
+        return re.sub(r"^Prereq: ", "", prereq_string)
 
-def print_tree(node: Node, level=0):
-    print("  " * level + f"{node.nodeType}: {node.courseId} {node.courseTitle}")
-    for child in node.children:
-        print_tree(child, level + 1)
+class tokenize:
+    def tokenize(prereq_string: str) -> list[Token]:
+        tokens = []
+        current_token = ''
+        for char in prereq_string:
+            if char == '(':
+                if current_token:
+                    if current_token in CODES:
+                        tokens.append(Token(current_token, TokenType.CODE))
+                        current_token = ''
+                    else:
+                        tokens.append(Token(current_token, TokenType.NONE))
+                        current_token = ""
+                tokens.append(Token(char, TokenType.LPAR))
+            elif char == ')':
+                if current_token:
+                    if current_token in CODES:
+                        tokens.append(Token(current_token, TokenType.CODE))
+                        current_token = ''
+                    else:
+                        tokens.append(Token(current_token, TokenType.NONE))
+                        current_token = ''
+                tokens.append(Token(char, TokenType.RPAR))
+            elif char == '/':
+                if current_token:
+                    if current_token in CODES:
+                        tokens.append(Token(current_token, TokenType.CODE))
+                        current_token = ''
+                    else:
+                        tokens.append(Token(current_token, TokenType.NONE))
+                        current_token = ''
+                tokens.append(Token(char, TokenType.SLASH))
+            elif char == ',':
+                if current_token:
+                    if current_token in CODES:
+                        tokens.append(Token(current_token, TokenType.CODE))
+                        current_token = ''
+                    else:
+                        tokens.append(Token(current_token, TokenType.NONE))
+                        current_token = ''
+                tokens.append(Token(char, TokenType.COMMA))
+            elif char == ' ':
+                if current_token:
+                    if current_token == 'One':
+                        current_token += ' '
+                    elif current_token in CODES:
+                        tokens.append(Token(current_token, TokenType.CODE))
+                        current_token = ''
+                    else:
+                        tokens.append(Token(current_token, TokenType.NONE))
+                        current_token = ''
+            elif char == ';':
+                if current_token:
+                    if current_token in CODES:
+                        tokens.append(Token(current_token, TokenType.CODE))
+                        current_token = ''
+                    else:
+                        tokens.append(Token(current_token, TokenType.NONE))
+                        current_token = ''
 
-print_tree(parsed_tree)
+                tokens.append(Token(char, TokenType.SEMICOLON))
+            else:
+                current_token += char
+                if current_token in SUBJECTS:
+                    tokens.append(Token(current_token, TokenType.SUBJECT))
+                    current_token = ''
+                elif current_token == 'or':
+                    tokens.append(Token(current_token, TokenType.OR))
+                    current_token = ''
+                elif current_token == 'and':
+                    tokens.append(Token(current_token, TokenType.AND))
+                    current_token = ''
+                elif current_token == 'One of':
+                    tokens.append(Token(current_token, TokenType.ONEOF))
+                    current_token = ''
+        if current_token:
+            if current_token in CODES:
+                tokens.append(Token(current_token, TokenType.CODE))
+            else:
+                tokens.append(Token(current_token, TokenType.NONE))
+
+        return tokens
+    
+class parse:
+    def parse(tokens: list[Token]) -> Node:
+        return Node()
+
+prereq_string = API.requirementsDescription({'term': 1245, 'subject': 'CS', 'catalog-number': 485})
+print(prereq_string)
+
+tokenization = tokenize.tokenize(clean.full_clean(prereq_string))
+
+for token in tokenization:
+    print(token.token + " " + str(token.type))

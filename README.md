@@ -1,6 +1,6 @@
 # CourseCompass
 
-# Libraries Used:
+## Libraries Used:
 
 [libpqxx](https://github.com/jtv/libpqxx?tab=readme-ov-file)
 <br>
@@ -8,7 +8,7 @@
 <br>
 [asio](https://github.com/chriskohlhoff/asio/) (Already included in the include folder)
 
-# Run Backend:
+## Run Backend:
 
 ```sh
 cd backend

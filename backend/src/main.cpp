@@ -1,6 +1,7 @@
 #include <vector>
 #include "crow.h"
 #include "nodes.cpp"
+#include <pqxx/pqxx>
 
 using namespace std;
 
@@ -66,8 +67,8 @@ int main()
     });
 
     CROW_ROUTE(app, "/api").methods(crow::HTTPMethod::GET)([](const crow::request& req){
-        // Node* course = find_node(req.url_params.get("course"));
-        std::string course_name = req.get_body_params().get("course");
+        std::string course_name = req.url_params.get("course");
+        // std::string course_name = req.get_body_params().get("course");
         Node* course = find_node(course_name);
         vector<Node*> processed = {};
         vector<Node*> toBeProcessed = {course};

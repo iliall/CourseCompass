@@ -38,7 +38,8 @@
 # Environments
 .env
 
-
+# Python
 __pycache__/
 
+# CMake
 build/

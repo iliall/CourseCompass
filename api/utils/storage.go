@@ -1,10 +1,10 @@
 package utils
 
 import (
-	"github.com/iliall/CourseCompass/models"
 	"database/sql"
 	"fmt"
 	"github.com/gin-gonic/gin"
+	"github.com/iliall/CourseCompass/models"
 	"github.com/joho/godotenv"
 	"github.com/lib/pq"
 	"os"

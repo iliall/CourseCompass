@@ -1,9 +1,9 @@
 package main
 
 import (
+	"github.com/gin-gonic/gin"
 	"github.com/iliall/CourseCompass/models"
 	"github.com/iliall/CourseCompass/utils"
-	"github.com/gin-gonic/gin"
 	"net/http"
 )
 

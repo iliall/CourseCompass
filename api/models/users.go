@@ -5,11 +5,10 @@ import (
 )
 
 type User struct {
-	Id int
-	Username string
-	Email string
-	Password string
-	courses []*string
+	Username  string   `json:"username"`
+	Email     string   `json:"email"`
+	Password  string   `json:"password"`
+	CourseIDs []string `json:"course_ids"`
 }
 
 func HashPassword(password string) string {
@@ -22,24 +21,19 @@ func HashPassword(password string) string {
 
 func NewUser(id int, username string, email string, password string) *User {
 	return &User{
-		Id: id,
-		Username: username,
-		Email: email,
-		Password: HashPassword(password),
-		courses: []*string{},
+		Username:  username,
+		Email:     email,
+		Password:  HashPassword(password),
+		CourseIDs: []string{},
 	}
 }
 
-func (u *User) AddCourse(course *string) {
-	u.courses = append(u.courses, course)
+func (u *User) AddCourse(course string) {
+	u.CourseIDs = append(u.CourseIDs, course)
 }
 
-func (u *User) GetCourses() []*string {
-	return u.courses
-}
-
-func (u *User) GetId() int {
-	return u.Id
+func (u *User) GetCourses() []string {
+	return u.CourseIDs
 }
 
 func (u *User) GetUsername() string {
@@ -49,8 +43,6 @@ func (u *User) GetUsername() string {
 func (u *User) GetEmail() string {
 	return u.Email
 }
-
-
 
 func (u *User) CheckPassword(password string) bool {
 	return u.Password == HashPassword(password)

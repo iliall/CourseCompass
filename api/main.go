@@ -1,17 +1,18 @@
 package main
 
 import (
-	"net/http"
 	"api/models"
+	"api/utils"
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 var nodes []*models.Node
 
 // Setup initializes the nodes and their relationships
 func setup() {
-  cs480 := models.NewNode(models.AND, "CS 480", "1")
-  cs485 := models.NewNode(models.AND, "CS 485", "2")
+	cs480 := models.NewNode(models.AND, "CS 480", "1")
+	cs485 := models.NewNode(models.AND, "CS 485", "2")
 	cs380 := models.NewNode(models.AND, "CS 380", "3")
 	cs385 := models.NewNode(models.AND, "CS 385", "4")
 	cs280 := models.NewNode(models.AND, "CS 280", "5")
@@ -37,8 +38,6 @@ func setup() {
 	nodes = []*models.Node{cs480, cs485, cs380, cs385, cs280, cs285, cs240, cs136, cs135, or1, or2}
 }
 
-
-
 func FindNode(courseId string) *models.Node {
 	for _, node := range nodes {
 		if node.GetCourseId() == courseId {
@@ -51,6 +50,12 @@ func FindNode(courseId string) *models.Node {
 func main() {
 	setup()
 
+	err := utils.ConnectDatabase()
+
+	if err != nil {
+		panic(err)
+	}
+
 	r := gin.Default()
 
 	r.GET("/ping", func(c *gin.Context) {
@@ -59,11 +64,9 @@ func main() {
 		})
 	})
 
-	
 	r.GET("/api", func(c *gin.Context) {
 		courseId := c.Query("course")
 
-		
 		course := FindNode(courseId)
 		if course == nil {
 			c.JSON(http.StatusNotFound, gin.H{
@@ -72,12 +75,10 @@ func main() {
 			return
 		}
 
-		
 		processed := []*models.Node{}
 		toBeProcessed := []*models.Node{course}
 		result := models.FindPrereqs(processed, toBeProcessed)
 
-		
 		var prereqs []gin.H
 		for _, node := range result {
 			prereqs = append(prereqs, gin.H{
@@ -89,6 +90,26 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{
 			"prereqs": prereqs,
 		})
+	})
+
+	r.POST("/user", func(c *gin.Context) {
+		utils.AddUser(c)
+	})
+
+	r.GET("/user/:username", func(c *gin.Context) {
+		utils.GetUserByUsername(c)
+	})
+
+	r.POST("/user/:username/courses", func(c *gin.Context) {
+		utils.UpdateUserCourses(c)
+	})
+
+	r.POST("/user/:username/delete", func(c *gin.Context) {
+		utils.DeleteUser(c)
+	})
+
+	r.GET("/users", func(c *gin.Context) {
+		utils.GetAllUsers(c)
 	})
 
 	// Start the server on port 8080

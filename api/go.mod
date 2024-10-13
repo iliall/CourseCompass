@@ -1,4 +1,4 @@
-module api
+module github.com/iliall/CourseCompass
 
 go 1.23.0
 

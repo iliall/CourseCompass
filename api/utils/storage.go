@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"api/models"
+	"github.com/iliall/CourseCompass/models"
 	"database/sql"
 	"fmt"
 	"github.com/gin-gonic/gin"

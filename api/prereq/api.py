@@ -1,7 +1,8 @@
 import os
 import requests
 
-API_KEY = os.getenv('API_KEY')
+API_KEY = ""
+SECRET_KEY= ""
 
 class API:
     def requirementsDescription(request: dict) -> str:
@@ -27,7 +28,7 @@ class API:
         else:
             return [response.text]
         
-    def codes(request: dict) -> list[str]:
+    def subjectCodes(request: dict) -> list[str]:
         term = request.get('term')
         subject = request.get('subject')
         headers = {'x-api-key': API_KEY}

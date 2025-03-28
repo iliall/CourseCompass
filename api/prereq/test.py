@@ -7,7 +7,7 @@ class NodeType(Enum):
 
 class Node:
 
-    def __init__(self, nodeType: NodeType, courseId: str = "", courseTitle: str = "OR") -> None:
+    def __init__(self, nodeType: NodeType = NodeType.OR, courseId: str = "", courseTitle: str = "OR") -> None:
         self.nodeType = nodeType
         self.courseId = courseId
         self.courseTitle = courseTitle
@@ -121,13 +121,3 @@ OrNode1.add_child(courseNode3)
 OrNode.add_child(courseNode4)
 root.add_child(courseNode7)
 courseNode4.add_child(courseNode6)
-
-
-# min_prereqs = root.min_prereqs()
-min_prereqs = find_minPrereqs([], [root])
-print(f'Minimum prerequisites needed: {[str(node) for node in min_prereqs]}')
-
-for node in min_prereqs:
-    node.set_value(True)
-
-print_node(root, 0)
